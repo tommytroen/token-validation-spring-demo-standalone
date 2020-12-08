@@ -6,7 +6,8 @@ import no.nav.security.token.support.core.api.Unprotected;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Protected
+
+@ProtectedRestController(value = "/demo/protectedwithclaims", claimMap = {"acr=Level4"})
 @RestController
 public class DemoController {
 
@@ -21,8 +22,7 @@ public class DemoController {
         return "i am unprotected";
     }
 
-    @ProtectedWithClaims(issuer = "issuer1", claimMap = {"acr=Level4"})
-    @GetMapping("/demo/protectedwithclaims")
+    @GetMapping
     public String protectedWithClaims(){
         return "i am protected with claims";
     }
