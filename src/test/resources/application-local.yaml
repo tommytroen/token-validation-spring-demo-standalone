@@ -1,6 +1,9 @@
 
 http.proxy.parametername: notused
 
+mock-oauth2-server:
+  port: 1234
+
 no.nav.security.jwt:
   expirythreshold: 1 #threshold in minutes until token expires
   issuer:

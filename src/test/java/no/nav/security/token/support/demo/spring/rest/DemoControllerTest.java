@@ -18,6 +18,7 @@ import org.springframework.web.context.WebApplicationContext;
 import javax.servlet.Filter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 
@@ -47,11 +48,11 @@ class DemoControllerTest {
     @Test
     void noTokenInRequest() {
         given()
-            .when()
-            .get("/demo/protected")
-            .then()
-            .log().ifValidationFails()
-            .statusCode(HttpStatus.UNAUTHORIZED.value());
+                .when()
+                .get("/demo/protected")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
 
     }
 
@@ -62,33 +63,66 @@ class DemoControllerTest {
         String uri = "/demo/protected";
 
         given()
-            .header("Authorization", "Bearer " + token1)
-            .when()
-            .get(uri)
-            .then()
-            .log().ifValidationFails()
-            .statusCode(HttpStatus.OK.value());
+                .header("Authorization", "Bearer " + token1)
+                .when()
+                .get(uri)
+                .then()
+                .log().ifValidationFails()
+                .statusCode(HttpStatus.OK.value());
 
         given()
-            .header("Authorization", "Bearer " + token2)
-            .when()
-            .get(uri)
-            .then()
-            .log().ifValidationFails()
-            .statusCode(HttpStatus.OK.value());
+                .header("Authorization", "Bearer " + token2)
+                .when()
+                .get(uri)
+                .then()
+                .log().ifValidationFails()
+                .statusCode(HttpStatus.OK.value());
     }
 
-    private String token(String issuerId, String subject, String audience){
+    @Test
+    void requiredClaimsMissingShouldReturn401() {
+        String tokenWithoutRequiredClaim = token("issuer1", "subject1", "demoapplication");
+        String tokenWithRequiredClaim = server.issueToken(
+                "issuer1",
+                "theclientid",
+                new DefaultOAuth2TokenCallback(
+                        "issuer1",
+                        "subject1",
+                        "demoapplication",
+                        Map.of("acr", "Level4"),
+                        3600
+                )
+        ).serialize();
+
+        given()
+                .header("Authorization", "Bearer " + tokenWithoutRequiredClaim)
+                .when()
+                .get("/demo/protectedwithclaims")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
+
+        given()
+                .header("Authorization", "Bearer " + tokenWithRequiredClaim)
+                .when()
+                .get("/demo/protectedwithclaims")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(HttpStatus.OK.value());
+
+    }
+
+    private String token(String issuerId, String subject, String audience) {
         return server.issueToken(
-            issuerId,
-            "theclientid",
-            new DefaultOAuth2TokenCallback(
                 issuerId,
-                subject,
-                audience,
-                Collections.emptyMap(),
-                3600
-            )
+                "theclientid",
+                new DefaultOAuth2TokenCallback(
+                        issuerId,
+                        subject,
+                        audience,
+                        Collections.emptyMap(),
+                        3600
+                )
         ).serialize();
     }
 }
